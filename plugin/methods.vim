@@ -818,8 +818,13 @@ endfunction
 
 "eval ruby code only once
 function! s:InitGUI()
-	let g:menu_gui_enabled = 1
-	:call <SID>RubyInit()
+    if (has("ruby"))
+      let g:menu_gui_enabled = 1
+      call <SID>RubyInit()
+      call UpdateSession()
+    else
+      echoerr "No ruby compiled to this vim! Please enable a ruby interpreter to use this skript! (see the README file)"
+    endif
 endfunction
 
 "new class is loaded
@@ -920,7 +925,6 @@ endfunction
 "set autocommands
 augroup classbrowser
 	autocmd GUIEnter * call <SID>InitGUI()
-	autocmd GUIEnter * call UpdateSession()
 	autocmd BufEnter * call <SID>Update()
 	autocmd BufAdd * call <SID>AddSession()
 	autocmd BufWritePost * call <SID>Update()
