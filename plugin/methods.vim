@@ -1,7 +1,8 @@
 """"""""""""""""""""""""""""""""""""""""""""""""""
 " Classbrowser Menu
 " 
-" Version: $Revision: 1.9.1 $
+" Version: $Revision: 1.10 $
+" Id     : $Id: methods.vim,v 1.10 2001/11/05 12:20:45 mveit Exp $
 " Date   : Juni 2001
 "
 " Author : Matthias Veit <matthias_veit@yahoo.de>
@@ -79,26 +80,28 @@ class XClass
   ###########################################
   # update, if file has changed
   def update
-	modtime = File.stat(@name).mtime
-	if(modtime!=@mtime)
-	  @elements.clear
-	  unique = Hash.new
-	  IO.readlines("| ctags -x --c++-types=cdefgmnpstuv  --java-types=cfmi #{@name}").each { |line|
-		(name, type, line) = line.split(/\s+/)
-		type = ctagsname(type)
-		#look for overloaded names
-		if (unique.has_key?(type+name))
-		  olcnt=2
-		  olcnt+=1 while (unique.has_key?(type+name+"(#{olcnt})"))
-		  name = "#{name}(#{olcnt})"
-		end
-		unique[type+name] = true
-		elements[type] = Array.new if (!elements.has_key?(type))
-		xtype = elements[type] 
-		xtype.push(XEntry.new(type, name, line))
-	  }
-	  @mtime = modtime
-	end
+    if (File.exist?(@name))
+	  modtime = File.stat(@name).mtime
+	  if(modtime!=@mtime)
+	    @elements.clear
+	    unique = Hash.new
+	    IO.readlines("| ctags -x --c++-types=cdefgmnpstuv  --java-types=cfmi #{@name}").each { |line|
+		  (name, type, line) = line.split(/\s+/)
+		  type = ctagsname(type)
+		  #look for overloaded names
+		  if (unique.has_key?(type+name))
+		    olcnt=2
+		    olcnt+=1 while (unique.has_key?(type+name+"(#{olcnt})"))
+		    name = "#{name}(#{olcnt})"
+		  end
+		  unique[type+name] = true
+		  elements[type] = Array.new if (!elements.has_key?(type))
+		  xtype = elements[type] 
+		  xtype.push(XEntry.new(type, name, line))
+	    }
+	    @mtime = modtime
+	  end
+    end
   end
   ###########################################
   # give Entry of given line
@@ -291,7 +294,7 @@ class XSession
   # initial behaviour: show all session classes
   def sessionInit()
 	0.upto(VIM::Buffer.count-1) { |x|
-	  if (getXClass(VIM::Buffer[x].name).nil?)
+	  if (!VIM::Buffer[x].name.nil? and getXClass(VIM::Buffer[x].name).nil?)
 		@xclasses.push(XClass.new(VIM::Buffer[x].name))
 	  end
 	}
@@ -308,7 +311,7 @@ endfunction
 function! s:Update()
 	if (exists("g:menu_gui_enabled"))
 		ruby VIM::command("silent! aunmenu #{ClassMenue}")
-		ruby XSession.getInstance.showClass(VIM::Buffer.current.name)
+		ruby XSession.getInstance.showClass(VIM.evaluate("expand(\"<afile>\")"))
 	endif
 endfunction
 
@@ -321,14 +324,14 @@ endfunction
 "new class is loaded
 function! s:AddSession()
 	if (exists("g:menu_gui_enabled"))
-		ruby XSession.getInstance.addClass(VIM::Buffer.current.name)
+		ruby XSession.getInstance.addClass(VIM.evaluate("expand(\"<afile>\")"))
 	endif
 endfunction
 
 "remove class from session
 function! s:DeleteSession()
 	if (exists("g:menu_gui_enabled"))
-		ruby XSession.getInstance.removeClass(VIM::Buffer.current.name)
+		ruby XSession.getInstance.removeClass(VIM.evaluate("expand(\"<afile>\")"))
 	endif
 endfunction
 
@@ -353,9 +356,9 @@ function DisableStatusline()
 	endif
 endfunction
 
-amenu 190.40.10 E&xtended.menu.statusline.enable :call EnableStatusline()<cr>
-amenu 190.40.20 E&xtended.menu.statusline.disable :call DisableStatusline()<cr>
-amenu 190.40.30 E&xtended.menu.update_session :call UpdateSession()<cr>
+"amenu 190.40.10 E&xtended.menu.statusline.enable :call EnableStatusline()<cr>
+"amenu 190.40.20 E&xtended.menu.statusline.disable :call DisableStatusline()<cr>
+"amenu 190.40.30 E&xtended.menu.update_session :call UpdateSession()<cr>
 
 augroup classbrowser
 	autocmd GUIEnter * call <SID>InitGUI()
