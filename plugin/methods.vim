@@ -1,22 +1,20 @@
 """"""""""""""""""""""""""""""""""""""""""""""""""
 " Classbrowser Menu
 " 
-" Version: $Revision: 1.9 $
-" Id     : $Id: menu.vim,v 1.9 2001/10/11 11:15:17 mveit Exp $
+" Version: $Revision: 1.9.1 $
 " Date   : Juni 2001
 "
-" Author : Matthias Veit <matthias@aquanauten.net>
+" Author : Matthias Veit <matthias_veit@yahoo.de>
 """""""""""""""""""""""""""""""""""""""""""""""""""
 
 
-
-augroup classbrowser
-
-function MENU_RUBY_INIT()
+function! s:RubyInit()
 ruby << RUBYBLOCK
 
 ###########################################
 # statics used to setup
+# 
+# change this for your own needs
 SessionMenue="Session&Classes"
 ClassMenue="Class&Members"
 MAXCLASSES = 40
@@ -55,6 +53,7 @@ class XClass
   attr			:mtime
   @@ctags={
 	"class" => "Class",
+	"interface" => "Interface",
 	"field" => "attribute.",
 	"member" => "attribute."
   }
@@ -239,6 +238,8 @@ class XSession
 	@xclasses.delete(xclass)
 	if (@xclasses.size==(MAXCLASSES)) #reorder
 	  reOrder
+	elsif (@xclasses.size==(0)) #delete menu
+	  VIM::command("silent! aunmenu #{SessionMenue}")
 	else
 	  classpreamble = ""
 	  classpreamble = getPreamble(xclass.name) if (@xclasses.size>MAXCLASSES)
@@ -274,6 +275,7 @@ class XSession
   ###########################################
   # enable StatusLine
   def enableStatusLine(bool)
+    VIM.command("augroup classbrowser")
 	if (bool)
 	  VIM.command("autocmd! CursorHold * ruby XSession.getInstance.setStatusLine")
 	  VIM.command("set updatetime=1000")
@@ -282,6 +284,7 @@ class XSession
 	  VIM.command("set statusline=")
 	  VIM.command("set updatetime=4000") #default=4000
 	end
+	VIM.command("augroup END")
   end
 
   ###########################################
@@ -301,77 +304,65 @@ end
 RUBYBLOCK
 endfunction
 	
-"sledge hammer for start
-function MENU_UPDATE_SESSION()
-	if (exists("g:menu_gui_enabled"))
-		ruby XSession.getInstance.sessionInit()
-	endif
-endfunction
-
 "show current class
-function MENU_SETUP()
+function! s:Update()
 	if (exists("g:menu_gui_enabled"))
+		ruby VIM::command("silent! aunmenu #{ClassMenue}")
 		ruby XSession.getInstance.showClass(VIM::Buffer.current.name)
 	endif
 endfunction
 
-"delete menue, not xclass
-function MENU_DELETE()
-	if (exists("g:menu_gui_enabled"))
-		ruby VIM::command("silent! aunmenu #{ClassMenue}")
-	endif
-endfunction
-
-"update = delete+setup (bufferchange)
-function MENU_UPDATE()
-	:call MENU_DELETE()
-	:call MENU_SETUP()
-endfunction
-
 "eval ruby code only once
-function MENU_INITGUI()
+function! s:InitGUI()
 	let g:menu_gui_enabled = 1
-	:call MENU_RUBY_INIT()
+	:call <SID>RubyInit()
 endfunction
 
 "new class is loaded
-function MENU_ADD_SESSION()
+function! s:AddSession()
 	if (exists("g:menu_gui_enabled"))
 		ruby XSession.getInstance.addClass(VIM::Buffer.current.name)
 	endif
 endfunction
 
 "remove class from session
-function MENU_DELETE_SESSION()
+function! s:DeleteSession()
 	if (exists("g:menu_gui_enabled"))
 		ruby XSession.getInstance.removeClass(VIM::Buffer.current.name)
 	endif
 endfunction
 
+"sledge hammer for start
+function UpdateSession()
+	if (exists("g:menu_gui_enabled"))
+		ruby XSession.getInstance.sessionInit()
+	endif
+endfunction
+
 "enable status line
-function MENU_ENABLE_STATUSLINE()
+function EnableStatusline()
 	if (exists("g:menu_gui_enabled"))
 		ruby XSession.getInstance.enableStatusLine(true)
 	endif
 endfunction
 
 "disable status line
-function MENU_DISABLE_STATUSLINE()
+function DisableStatusline()
 	if (exists("g:menu_gui_enabled"))
 		ruby XSession.getInstance.enableStatusLine(false)
 	endif
 endfunction
 
-amenu 190.40.10 E&xtended.menu.statusline.enable :call MENU_ENABLE_STATUSLINE()<cr>
-amenu 190.40.20 E&xtended.menu.statusline.disable :call MENU_DISABLE_STATUSLINE()<cr>
-amenu 190.40.30 E&xtended.menu.update_session :call MENU_UPDATE_SESSION()<cr>
+amenu 190.40.10 E&xtended.menu.statusline.enable :call EnableStatusline()<cr>
+amenu 190.40.20 E&xtended.menu.statusline.disable :call DisableStatusline()<cr>
+amenu 190.40.30 E&xtended.menu.update_session :call UpdateSession()<cr>
 
-autocmd BufLeave *.h,*.c,*.C,*.cc,*.cpp,*.java call MENU_DELETE()
-autocmd BufWritePost *.h,*.c,*.C,*.cc,*.cpp,*.java call MENU_UPDATE()
-autocmd GUIEnter * call MENU_INITGUI()
-autocmd GUIEnter *.h,*.c,*.C,*.cc,*.cpp,*.java call MENU_UPDATE_SESSION()
-autocmd BufEnter *.h,*.c,*.C,*.cc,*.cpp,*.java call MENU_SETUP()
-autocmd BufAdd *.h,*.c,*.C,*.cc,*.cpp,*.java call MENU_ADD_SESSION()
-autocmd BufDelete *.h,*.c,*.C,*.cc,*.cpp,*.java call MENU_DELETE_SESSION()
+augroup classbrowser
+	autocmd GUIEnter * call <SID>InitGUI()
+	autocmd GUIEnter * call UpdateSession()
+	autocmd BufEnter * call <SID>Update()
+	autocmd BufAdd * call <SID>AddSession()
+	autocmd BufWritePost * call <SID>Update()
+	autocmd BufDelete * call <SID>DeleteSession()
 augroup END
 
