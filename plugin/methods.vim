@@ -1,8 +1,8 @@
 """"""""""""""""""""""""""""""""""""""""""""""""""
 " Classbrowser Menu
 " 
-" Version: $Revision: 1.10 $
-" Id     : $Id: methods.vim,v 1.10 2001/11/05 12:20:45 mveit Exp $
+" Version: $Revision: 1.11 $
+" Id     : $Id: menu.vim,v 1.11 2001/11/09 17:06:48 mveit Exp $
 " Date   : Juni 2001
 "
 " Author : Matthias Veit <matthias_veit@yahoo.de>
@@ -19,7 +19,7 @@ ruby << RUBYBLOCK
 SessionMenue="Session&Classes"
 ClassMenue="Class&Members"
 MAXCLASSES = 40
-MAXTYPES = 10
+MAXTYPES = 20
 
 ###########################################
 # for debugging purposes
@@ -101,6 +101,8 @@ class XClass
 	    }
 	    @mtime = modtime
 	  end
+    else
+      @elements.clear
     end
   end
   ###########################################
@@ -187,7 +189,7 @@ class XSession
 		preamble = ""
 		preamble = getPreamble(xentry.name) if (typelist.size>MAXTYPES)
 		VIM::command("amenu 300 #{ClassMenue}.#{type}\\ #{preamble}\\ #{xentry.name} #{xentry.line}G") if (not sessiononly)
-		VIM::command("amenu 200.#{xclass.menu} #{SessionMenue}.#{classpreamble}#{xclass.classname}.#{type}\\ #{preamble}\\ #{xentry.name} :silent! e! +#{xentry.line} #{xclass.name}<cr>")
+		VIM::command("amenu 200.#{xclass.menu} #{SessionMenue}.#{classpreamble}#{xclass.classname}.#{type}\\ #{preamble}\\ #{xentry.name} :e! +#{xentry.line} #{xclass.name}<cr>")
 	  }
 	}
   end
@@ -294,8 +296,12 @@ class XSession
   # initial behaviour: show all session classes
   def sessionInit()
 	0.upto(VIM::Buffer.count-1) { |x|
-	  if (!VIM::Buffer[x].name.nil? and getXClass(VIM::Buffer[x].name).nil?)
-		@xclasses.push(XClass.new(VIM::Buffer[x].name))
+	  if (!VIM::Buffer[x].name.nil?)
+        if (getXClass(VIM::Buffer[x].name).nil?)
+		  @xclasses.push(XClass.new(VIM::Buffer[x].name))
+        else
+          getXClass(VIM::Buffer[x].name).update
+        end
 	  end
 	}
 	reOrder
@@ -311,7 +317,7 @@ endfunction
 function! s:Update()
 	if (exists("g:menu_gui_enabled"))
 		ruby VIM::command("silent! aunmenu #{ClassMenue}")
-		ruby XSession.getInstance.showClass(VIM.evaluate("expand(\"<afile>\")"))
+		ruby XSession.getInstance.showClass(VIM.evaluate("expand(\"<afile>:p\")"))
 	endif
 endfunction
 
@@ -324,14 +330,14 @@ endfunction
 "new class is loaded
 function! s:AddSession()
 	if (exists("g:menu_gui_enabled"))
-		ruby XSession.getInstance.addClass(VIM.evaluate("expand(\"<afile>\")"))
+		ruby XSession.getInstance.addClass(VIM.evaluate("expand(\"<afile>:p\")"))
 	endif
 endfunction
 
 "remove class from session
 function! s:DeleteSession()
 	if (exists("g:menu_gui_enabled"))
-		ruby XSession.getInstance.removeClass(VIM.evaluate("expand(\"<afile>\")"))
+		ruby XSession.getInstance.removeClass(VIM.evaluate("expand(\"<afile>:p\")"))
 	endif
 endfunction
 
@@ -355,10 +361,6 @@ function DisableStatusline()
 		ruby XSession.getInstance.enableStatusLine(false)
 	endif
 endfunction
-
-"amenu 190.40.10 E&xtended.menu.statusline.enable :call EnableStatusline()<cr>
-"amenu 190.40.20 E&xtended.menu.statusline.disable :call DisableStatusline()<cr>
-"amenu 190.40.30 E&xtended.menu.update_session :call UpdateSession()<cr>
 
 augroup classbrowser
 	autocmd GUIEnter * call <SID>InitGUI()
