@@ -1,0 +1,7 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=96
+
+This little script offers an Class- and Sessionmenue for all languages
+ctags understand (java,c++,c,eiffel,fortran). 
+ - ClassMembers: all attributes/methods of actual class
+ - SessionClasses: all Classes in the current session
+By clicking on the entries, vim jumps to the specified location.The menue is updated via autocommands.
