@@ -1,0 +1,130 @@
+
+Classbrowser Menu:
+
+
+============================table of contents==================================
+
+I.........Installation
+II........Configuration
+III.......Possible Extensions
+IV........Contact
+
+
+I) ============================Installation====================================
+
+    Should be very easy: Just copy the file methods.vim to your vim-plugin
+                         directory (($HOME)/.vim/plugin on my linux machine).
+
+    Please notice: This is a ruby script - you need a ruby interpreter 
+                   (www.ruby-lang.org) installed _AND_ compiled to vim! 
+                   Configure option: --enable-rubyinterp
+
+II) ===========================Configuration===================================
+
+ a) Dynamic Configuration.
+    Almost all properties are configurable by functioncalls. These are:
+
+        * EnableStatusline(): 
+            Show a statusline, that informs about the type and the name of the
+            bounding tag (eg: the function or method, the cursor actually is)
+
+        * DisableStatusline():
+            Disables the statusline.
+
+        * SetClassmenueName(name):
+            Set the displayed name of the class menue 
+            (default: Class&Members).
+
+        * SetSessionmenueName(name):
+            Set the displayed name of the session menue 
+            (default: Session&Classes).
+
+        * SetClassmenueEntries(count):
+            Set the number of displayed types of a class until 
+            this type is folded.  
+            Folding means: the type is displayed in a submenu accessed by a 
+                           alphabetic sorted prefix (eg: abcd > type Atype).
+
+        * SetSessionmenueEntries(count):
+            Set the number of displayed classes in the session menu until 
+            this type is folded.
+            Folding means: the class is displayed in a submenu accessed by a 
+            alphabetic sorted prefix (eg: abcd > AutoSorter).
+
+        * SetAlphanumericsort():
+            The actual displayed class will be sorted alphanumerical. 
+            This means: sort by type and then by name of found tag. 
+            This is useful in most cases.
+
+        * SetLinesort()
+            The actual displayed class will be sort by line of the found tag. 
+            This is useful to see the structure of the actual processed buffer.
+
+
+ b) Static Configuration.
+    The State of the dynamic Configuration is not persistent. 
+    To change the config permanently you have to edit the script:
+
+    The class VIMMenue inside methods.vim (line 756 ff) holds all default 
+    values, that are accessible via dynamic configuration. 
+    Just change the default values to fit yor needs.  (permanently) :)
+
+   
+
+III) ========================Possible Extensions===============================
+
+
+    There are some possibilities to extend this script to fullfill 
+    your own requirements. This is only possible, if you are familar
+    with ruby.
+    At the moment, these are only two points:
+        *different parsers (out of ctags)
+        *different sorters (more than alphanumeric and line sorting)
+
+    a) Different Parsers
+        It is possible to register different parsers for different 
+        filetypes. The default parser is the (great) exuberant 
+        ctags parser. Ctags can parse more than 20 programming languages,
+        is very stable and fast. But if you want parse not a programming 
+        language (eg. latex files) - ctags refuses the service. 
+        Now it is possible to use an existing parser: 
+        write a little wrapper class which inherits from class TagReader
+        and implements the parse method. This wrapper class can be registered
+        via TagReaderFactory.registerReader for a specific type (eg.: tex).
+
+        example:
+        #the latex reader class
+        class LatexReader < TagReader
+            def parse(xclass, filename)
+                #parse filname, fill xclass
+            end
+        end
+        #register reader for all latexfiles
+        TagReaderFactory.getInstance().registerReader("tex", LatexReader.new())
+        
+    b) Different Sorters
+        It is very easy to use your own sorting scheme for the class menue.
+        Just write a Sorter class, which implements the Comparable interface
+        and register the sorter for a specific type.
+
+        example
+        #write a sorter class
+        class NoSort < Compareable
+            def compare(o1, o2)
+                return 1
+            end
+        end
+        #register sorter for all foo files
+        SorterFactory.getInstance().registerSorter("foo", LineSorter.new())
+
+    
+IV) ============================Contact========================================
+
+If there are problems, feature requests etc. mail to
+
+mailto: matthias_veit@yahoo.de
+
+Have fun
+Matthias
+
+
